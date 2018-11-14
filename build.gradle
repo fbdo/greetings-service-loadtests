@@ -1,0 +1,45 @@
+group 'com.bmwgroup'
+version = '0.0.1-SNAPSHOT'
+
+apply plugin: 'java'
+apply plugin: 'scala'
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+    jcenter()
+    maven {
+        url "https://maven.java.net/content/groups/public/"
+    }
+}
+
+dependencies {
+    testCompile('io.gatling.highcharts:gatling-charts-highcharts:3.0.0')
+}
+
+/**
+ * Gatling load tests
+ */
+task testLoad(type: JavaExec) {
+    description = 'Test load the web service with Gatling'
+    group = 'Load Test'
+    classpath = sourceSets.test.runtimeClasspath
+    jvmArgs = [
+            // workaround for https://github.com/gatling/gatling/issues/2689
+            //"-Dgatling.core.directory.binaries=${sourceSets.test.output.classesDir.toString()}",
+            //"-Dlogback.configurationFile=${logbackGatlingConfig()}"
+            '-XX:+UseG1GC', '-Xms128M', '-Xmx1024M'
+    ]
+    main = 'io.gatling.app.Gatling'
+    args = [
+            '--simulation', 'com.bmwgroup.greetingservice.loadtest.GreetingServiceSimulation',
+            '--results-folder', "${buildDir}/gatling-results",
+            '--binaries-folder', sourceSets.test.output.classesDirs[0].toString() // ignored because of above bug
+    ]
+}
+
+def logbackGatlingConfig() {
+    return sourceSets.test.resources.find { it.name == 'logback-gatling.xml'};
+}
